@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lộ Trình Chinh Phục HSK 5 & HSK 6 (3 Tháng)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Chosen Palette: Warm Sand & Emerald Slate */
+        body {
+            background-color: #f7f6f2;
+            color: #2d3748;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 260px;
+            max-height: 320px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+        .tab-btn.active {
+            border-bottom: 3px solid #059669;
+            color: #059669;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="pb-12">
+
+    <!-- Chosen Palette: Warm Neutral & Emerald Slate -->
+    <!-- Application Structure Plan: Thiết kế ứng dụng dạng Dashboard di động tích hợp: Header tổng quan năng lực, Biểu đồ Radar so sánh hiện tại vs mục tiêu, Công cụ tính điểm HSK 6 tương tác (Slider điểm Nghe/Đọc/Viết), Lộ trình 3 tháng dạng Tab/Timeline dễ cuộn chạm, Thời khóa biểu daily tích hợp Checklist, và Chiến thuật thi máy. Cấu trúc này giải quyết triệt để hạn chế xem file văn bản dài trên điện thoại. -->
+    <!-- Visualization & Content Choices: 
+         1. Radar Chart (Chart.js Canvas) -> So sánh năng lực hiện tại (Nghe HSK6, Ngữ pháp HSK1, Từ vựng HSK4) với Mục tiêu HSK5/6.
+         2. Interactive Score Calculator (HTML Sliders + JS) -> Cho phép tùy chỉnh dự kiến điểm Nghe/Đọc/Viết để tính xác suất đỗ HSK 6.
+         3. Dynamic Timeline Tabs (Vanilla JS) -> Xem lộ trình chi tiết từng tháng (Tháng 1, 2, 3) gọn gàng trên mobile.
+         4. Daily Schedule Cards -> Trình bày thời khóa biểu 3.5 - 4 tiếng/ngày trực quan.
+         Confirming: NO SVG graphics used, NO Mermaid JS used. HTML/CSS styling & Canvas standard charts used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Header & Navigation -->
+    <header class="bg-emerald-800 text-white sticky top-0 z-50 shadow-md">
+        <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div>
+                <h1 class="text-lg md:text-xl font-bold flex items-center gap-2">
+                    <span>🎯</span> Lộ Trình HSK 5 & 6 (3 Tháng)
+                </h1>
+                <p class="text-xs text-emerald-200">Dành riêng cho chiến thuật "Nghe gánh Đọc/Viết"</p>
+            </div>
+            <span class="bg-amber-400 text-amber-950 text-xs px-2.5 py-1 rounded-full font-bold">
+                3.5 - 4h / Ngày
+            </span>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 pt-4 space-y-6">
+
+        <!-- Intro Banner -->
+        <section class="bg-white p-4 rounded-xl shadow-sm border border-stone-200">
+            <h2 class="font-bold text-stone-800 text-base mb-1">📌 Mục Tiêu Tổng Quan</h2>
+            <p class="text-xs md:text-sm text-stone-600 leading-relaxed">
+                Ứng dụng được thiết kế giúp bạn tối ưu hóa 90 ngày học tập. Dựa trên thế mạnh <strong class="text-emerald-700">Nghe đạt HSK 6</strong> sẵn có, lộ trình tập trung vá lỗ hổng <strong class="text-amber-700">Ngữ pháp HSK 1-4</strong> và tăng tốc từ vựng để nắm chắc <strong class="text-emerald-700">HSK 5 (>210đ)</strong> và chinh phục <strong class="text-emerald-700">HSK 6 (≥180đ)</strong>.
+            </p>
+        </section>
+
+        <!-- Section 1: Visual Radar Ability Profile -->
+        <section class="bg-white p-4 rounded-xl shadow-sm border border-stone-200">
+            <div class="mb-3">
+                <h2 class="font-bold text-stone-800 text-base flex items-center gap-2">
+                    <span>📊</span> Phân Tích Năng Lực Hiện Tại vs Mục Tiêu
+                </h2>
+                <p class="text-xs text-stone-500">
+                    Sự lệch pha năng lực đòi hỏi chiến thuật học tập trọng tâm, không dàn trải.
+                </p>
+            </div>
+
+            <!-- Radar Chart Container -->
+            <div class="chart-container">
+                <canvas id="radarChart"></canvas>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-4 text-xs">
+                <div class="p-2.5 bg-emerald-50 rounded-lg border border-emerald-100">
+                    <span class="font-bold text-emerald-800 block mb-0.5">🌟 Điểm Mạnh Cốt Lõi</span>
+                    <p class="text-stone-600">Nghe hiểu HSK 6 (Thẩm âm tốt, phản xạ Pinyin nhanh).</p>
+                </div>
+                <div class="p-2.5 bg-amber-50 rounded-lg border border-amber-100">
+                    <span class="font-bold text-amber-800 block mb-0.5">⚠️ Rào Cản Cần Mở</span>
+                    <p class="text-stone-600">Ngữ pháp HSK 1-4 hổng & Tốc độ đọc lướt từ vựng.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Interactive HSK 6 Score Calculator -->
+        <section class="bg-white p-4 rounded-xl shadow-sm border border-stone-200">
+            <div class="mb-3">
+                <h2 class="font-bold text-stone-800 text-base flex items-center gap-2">
+                    <span>🧮</span> Công Cụ Dự Tính Điểm HSK 6
+                </h2>
+                <p class="text-xs text-stone-500">
+                    Kéo các thanh điểm để thử nghiệm chiến thuật "Nghe kéo Đọc & Viết". Tổng điểm $\ge$ 180 là ĐỖ.
+                </p>
+            </div>
+
+            <div class="space-y-4 my-4 bg-stone-50 p-3 rounded-lg border border-stone-200">
+                <!-- Listening Slider -->
+                <div>
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                        <span class="text-emerald-800">👂 Điểm Nghe (Thế mạnh):</span>
+                        <span id="listenVal" class="text-emerald-700 font-bold text-sm">90</span>
+                    </div>
+                    <input type="range" id="listenSlider" min="50" max="100" value="90" class="w-full accent-emerald-600 cursor-pointer" oninput="calculateScore()">
+                </div>
+
+                <!-- Reading Slider -->
+                <div>
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                        <span class="text-blue-800">📖 Điểm Đọc (Yếu từ vựng):</span>
+                        <span id="readVal" class="text-blue-700 font-bold text-sm">50</span>
+                    </div>
+                    <input type="range" id="readSlider" min="30" max="90" value="50" class="w-full accent-blue-600 cursor-pointer" oninput="calculateScore()">
+                </div>
+
+                <!-- Writing Slider -->
+                <div>
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                        <span class="text-amber-800">✍️ Điểm Viết (Đúng cấu trúc):</span>
+                        <span id="writeVal" class="text-amber-700 font-bold text-sm">45</span>
+                    </div>
+                    <input type="range" id="writeSlider" min="30" max="90" value="45" class="w-full accent-amber-600 cursor-pointer" oninput="calculateScore()">
+                </div>
+            </div>
+
+            <!-- Score Result Display -->
+            <div id="scoreBox" class="p-3 rounded-lg text-center bg-emerald-100 border border-emerald-300">
+                <div class="text-xs text-stone-600 mb-0.5">Dự kiến tổng điểm HSK 6</div>
+                <div id="totalScore" class="text-2xl font-black text-emerald-900">185 / 300</div>
+                <div id="statusBadge" class="inline-block mt-1 px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-600 text-white">
+                    🎉 KẾT QUẢ: ĐỖ HSK 6
+                </div>
+                <p id="scoreAdvice" class="text-xs text-stone-600 mt-2">
+                    Chiến thuật an toàn! Nghe đạt 90 điểm giúp bạn gánh hoàn toàn điểm phần Đọc & Viết.
+                </p>
+            </div>
+        </section>
+
+        <!-- Section 3: Month-by-Month Plan Tabs -->
+        <section class="bg-white p-4 rounded-xl shadow-sm border border-stone-200">
+            <div class="mb-3">
+                <h2 class="font-bold text-stone-800 text-base flex items-center gap-2">
+                    <span>📅</span> Lộ Trình Chi Tiết 3 Tháng
+                </h2>
+                <p class="text-xs text-stone-500">
+                    Bấm vào từng tháng để xem mục tiêu và nhiệm vụ cụ thể.
+                </p>
+            </div>
+
+            <!-- Tab Buttons -->
+            <div class="flex border-b border-stone-200 text-xs md:text-sm mb-4">
+                <button class="tab-btn active flex-1 py-2 text-center" onclick="switchTab('m1', this)">Tháng 1: Vá Ngữ Pháp</button>
+                <button class="tab-btn flex-1 py-2 text-center text-stone-500" onclick="switchTab('m2', this)">Tháng 2: Bứt Phá HSK 5</button>
+                <button class="tab-btn flex-1 py-2 text-center text-stone-500" onclick="switchTab('m3', this)">Tháng 3: Luyện Đề HSK 6</button>
+            </div>
+
+            <!-- Tab Content 1 -->
+            <div id="m1" class="tab-content space-y-3">
+                <div class="p-3 bg-stone-50 rounded-lg border-l-4 border-emerald-600">
+                    <h3 class="font-bold text-xs text-emerald-900 uppercase">Mục tiêu Tháng 1</h3>
+                    <p class="text-xs text-stone-700 mt-1">Chuẩn hóa ngữ pháp HSK 1-4 + Nạp 50% từ vựng HSK 5 (1.300 từ).</p>
+                </div>
+                <div class="space-y-2 text-xs">
+                    <div class="p-2.5 border border-stone-200 rounded-lg bg-white">
+                        <span class="font-bold text-stone-800 block">Tuần 1 - 2: Xử lý Ngữ Pháp Nền Tảng</span>
+                        <p class="text-stone-600 mt-0.5">• Ôn triệt để: Câu 把, câu 被, Bổ ngữ kết quả/phương hướng/khả năng, các cặp liên từ phức.</p>
+                        <p class="text-stone-500 text-[11px] mt-1 font-italic">👉 Dùng ngữ cảm nghe sẵn có để nhìn công thức và đối chiếu ngữ cảnh.</p>
+                    </div>
+                    <div class="p-2.5 border border-stone-200 rounded-lg bg-white">
+                        <span class="font-bold text-stone-800 block">Tuần 3 - 4: Tích Lũy Từ Vựng HSK 5</span>
+                        <p class="text-stone-600 mt-0.5">• Nạp 40-50 từ vựng HSK 5 mới/ngày qua Flashcard (Anki/Pleco).</p>
+                        <p class="text-stone-600 mt-0.5">• Luyện dạng bài Sắp xếp câu và Điền từ vào chỗ trống của HSK 5.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content 2 -->
+            <div id="m2" class="tab-content hidden space-y-3">
+                <div class="p-3 bg-stone-50 rounded-lg border-l-4 border-blue-600">
+                    <h3 class="font-bold text-xs text-blue-900 uppercase">Mục tiêu Tháng 2</h3>
+                    <p class="text-xs text-stone-700 mt-1">Thi thử HSK 5 đạt >210 điểm + Chuyển giao nạp từ vựng cốt lõi HSK 6.</p>
+                </div>
+                <div class="space-y-2 text-xs">
+                    <div class="p-2.5 border border-stone-200 rounded-lg bg-white">
+                        <span class="font-bold text-stone-800 block">Tuần 5 - 6: Luyện Đề HSK 5 & Viết Đoạn Văn</span>
+                        <p class="text-stone-600 mt-0.5">• Luyện phần Đọc HSK 5 (45 câu / 45 phút). Rèn kỹ năng căn thời gian.</p>
+                        <p class="text-stone-600 mt-0.5">• Học kỹ thuật viết đoạn 80 từ theo từ cho sẵn & theo tranh (dùng câu đơn chuẩn).</p>
+                    </div>
+                    <div class="p-2.5 border border-stone-200 rounded-lg bg-white">
+                        <span class="font-bold text-stone-800 block">Tuần 7 - 8: Bắt Đầu "Leo Núi" HSK 6</span>
+                        <p class="text-stone-600 mt-0.5">• Nạp 1.200 từ vựng tần suất cao nhất của HSK 6.</p>
+                        <p class="text-stone-600 mt-0.5">• Luyện kỹ năng Đọc lướt (Scanning/Skimming): Đọc câu hỏi trước -> Tìm keyword -> Chọn đáp án.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content 3 -->
+            <div id="m3" class="tab-content hidden space-y-3">
+                <div class="p-3 bg-stone-50 rounded-lg border-l-4 border-amber-600">
+                    <h3 class="font-bold text-xs text-amber-900 uppercase">Mục tiêu Tháng 3</h3>
+                    <p class="text-xs text-stone-700 mt-1">Tối ưu điểm Nghe HSK6 + Luyện Viết tóm tắt + Thi thử trên máy tính.</p>
+                </div>
+                <div class="space-y-2 text-xs">
+                    <div class="p-2.5 border border-stone-200 rounded-lg bg-white">
+                        <span class="font-bold text-stone-800 block">Tuần 9 - 10: Rèn Kỹ Năng Viết Tóm Tắt HSK 6</span>
+                        <p class="text-stone-600 mt-0.5">• Quy trình: Đọc bài 1.000 chữ (10 phút) -> Thu bài -> Gõ tóm tắt 400 chữ (35 phút).</p>
+                        <p class="text-stone-600 mt-0.5">• Mẹo: Thuộc dàn ý chuẩn (Mở bài - Diễn biến chính - Kết bài), ưu tiên câu đơn chính xác.</p>
+                    </div>
+                    <div class="p-2.5 border border-stone-200 rounded-lg bg-white">
+                        <span class="font-bold text-stone-800 block">Tuần 11 - 12: Tổng Lực Thi Thử Máy Tính (Mock Test)</span>
+                        <p class="text-stone-600 mt-0.5">• Làm đề thi thật trên máy tính, luyện gõ Pinyin nhanh và phản xạ chọn chữ Hán.</p>
+                        <p class="text-stone-600 mt-0.5">• Phân tích kỹ các lỗi sai ở phần Đọc để không lặp lại.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Daily Schedule Interactive Breakdown -->
+        <section class="bg-white p-4 rounded-xl shadow-sm border border-stone-200">
+            <div class="mb-3">
+                <h2 class="font-bold text-stone-800 text-base flex items-center gap-2">
+                    <span>⏱️</span> Thời Khóa Biểu Học Daily (3.5 - 4 Tiếng)
+                </h2>
+                <p class="text-xs text-stone-500">
+                    Phân bổ thời gian khoa học hàng ngày giúp duy trì cường độ cao mà không bị quá tải.
+                </p>
+            </div>
+
+            <div class="space-y-2 text-xs">
+                <!-- Task 1 -->
+                <div class="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
+                    <div class="bg-emerald-700 text-white font-bold text-xs px-2 py-1 rounded min-w-[65px] text-center">
+                        60 phút
+                    </div>
+                    <div>
+                        <div class="font-bold text-stone-800">Từ Vựng & Chữ Hán</div>
+                        <p class="text-stone-600 mt-0.5">Học qua Anki/Pleco. Nhớ mặt chữ và cụm từ (词组), không học từ đơn lẻ.</p>
+                    </div>
+                </div>
+
+                <!-- Task 2 -->
+                <div class="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
+                    <div class="bg-blue-700 text-white font-bold text-xs px-2 py-1 rounded min-w-[65px] text-center">
+                        60 phút
+                    </div>
+                    <div>
+                        <div class="font-bold text-stone-800">Ngữ Pháp & Luyện Viết</div>
+                        <p class="text-stone-600 mt-0.5">Tháng 1: Ôn chuyên đề ngữ pháp. Tháng 2-3: Luyện viết 80 từ HSK 5 & Tóm tắt HSK 6.</p>
+                    </div>
+                </div>
+
+                <!-- Task 3 -->
+                <div class="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
+                    <div class="bg-purple-700 text-white font-bold text-xs px-2 py-1 rounded min-w-[65px] text-center">
+                        60 phút
+                    </div>
+                    <div>
+                        <div class="font-bold text-stone-800">Luyện Đọc Hiểu (Tốc Độ)</div>
+                        <p class="text-stone-600 mt-0.5">Bắt buộc bấm giờ làm phần Đọc. Tập thói quen tìm keyword thay vì dịch từng từ.</p>
+                    </div>
+                </div>
+
+                <!-- Task 4 -->
+                <div class="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
+                    <div class="bg-amber-700 text-white font-bold text-xs px-2 py-1 rounded min-w-[65px] text-center">
+                        30-40 phút
+                    </div>
+                    <div>
+                        <div class="font-bold text-stone-800">Giải Đề & Tối Ưu Nghe</div>
+                        <p class="text-stone-600 mt-0.5">Làm đề thi thử, chữa câu sai. Nghe lại các bài nghe HSK 6 để duy trì phong độ tối đa.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: Strategic Advice & Recommended Tools -->
+        <section class="bg-white p-4 rounded-xl shadow-sm border border-stone-200">
+            <div class="mb-3">
+                <h2 class="font-bold text-stone-800 text-base flex items-center gap-2">
+                    <span>💡</span> Lời Khuyên & Công Cụ Học Tập
+                </h2>
+                <p class="text-xs text-stone-500">
+                    Những bí quyết cốt lõi giúp tối ưu hóa điểm số thi HSK.
+                </p>
+            </div>
+
+            <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-3 text-xs">
+                <div class="font-bold text-amber-900 mb-1 flex items-center gap-1">
+                    💻 Đăng Ký Thi Trên Máy Tính (机考) - BẮT BUỘC:
+                </div>
+                <p class="text-amber-800 leading-relaxed">
+                    Thi máy giúp bạn tận dụng tối đa phản xạ Pinyin tốt mà không bị cản trở bởi kỹ năng nhớ nét viết tay Chữ Hán.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="p-2.5 border border-stone-200 rounded-lg bg-stone-50">
+                    <div class="font-bold text-stone-800 mb-1">📱 App Từ Vựng</div>
+                    <p class="text-stone-600">• Anki (Spaced Repetition)</p>
+                    <p class="text-stone-600">• Pleco Dictionary</p>
+                </div>
+                <div class="p-2.5 border border-stone-200 rounded-lg bg-stone-50">
+                    <div class="font-bold text-stone-800 mb-1">💻 App Luyện Đề</div>
+                    <p class="text-stone-600">• HSK Online (SuperTest)</p>
+                    <p class="text-stone-600">• Web chinesetest.cn</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // 1. Chart.js Radar Chart
+        document.addEventListener("DOMContentLoaded", function() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Kỹ năng Nghe', 'Từ vựng HSK', 'Ngữ pháp', 'Tốc độ Đọc', 'Kỹ năng Viết'],
+                    datasets: [
+                        {
+                            label: 'Hiện tại',
+                            data: [95, 60, 20, 50, 40],
+                            backgroundColor: 'rgba(217, 119, 6, 0.25)',
+                            borderColor: '#d97706',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#d97706'
+                        },
+                        {
+                            label: 'Mục tiêu HSK 6',
+                            data: [90, 85, 75, 75, 70],
+                            backgroundColor: 'rgba(5, 150, 105, 0.2)',
+                            borderColor: '#059669',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#059669'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 100,
+                            ticks: { display: false },
+                            pointLabels: {
+                                font: { size: 10, weight: 'bold' }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12, font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+
+            // Initial calculation
+            calculateScore();
+        });
+
+        // 2. Interactive Calculator Function
+        function calculateScore() {
+            const l = parseInt(document.getElementById('listenSlider').value);
+            const r = parseInt(document.getElementById('readSlider').value);
+            const w = parseInt(document.getElementById('writeSlider').value);
+
+            document.getElementById('listenVal').innerText = l;
+            document.getElementById('readVal').innerText = r;
+            document.getElementById('writeVal').innerText = w;
+
+            const total = l + r + w;
+            document.getElementById('totalScore').innerText = total + " / 300";
+
+            const scoreBox = document.getElementById('scoreBox');
+            const statusBadge = document.getElementById('statusBadge');
+            const scoreAdvice = document.getElementById('scoreAdvice');
+
+            if (total >= 180) {
+                scoreBox.className = "p-3 rounded-lg text-center bg-emerald-100 border border-emerald-300";
+                statusBadge.className = "inline-block mt-1 px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-600 text-white";
+                statusBadge.innerText = "🎉 KẾT QUẢ: ĐỖ HSK 6";
+                scoreAdvice.innerText = "Chiến thuật hợp lý! Điểm Nghe cao sẽ giúp gánh toàn bộ phần Đọc và Viết.";
+            } else {
+                scoreBox.className = "p-3 rounded-lg text-center bg-rose-100 border border-rose-300";
+                statusBadge.className = "inline-block mt-1 px-3 py-0.5 rounded-full text-xs font-bold bg-rose-600 text-white";
+                statusBadge.innerText = "⚠️ KẾT QUẢ: CHƯA ĐẠT (Cần ≥180đ)";
+                scoreAdvice.innerText = "Hãy tăng nhẹ điểm Nghe hoặc Đọc để đảm bảo vượt ngưỡng 180 điểm nhé!";
+            }
+        }
+
+        // 3. Tab Switcher Function
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active');
+                el.classList.add('text-stone-500');
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+            btn.classList.add('active');
+            btn.classList.remove('text-stone-500');
+        }
+    </script>
+</body>
+</html>
